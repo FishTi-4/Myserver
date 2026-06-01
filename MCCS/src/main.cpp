@@ -74,7 +74,6 @@ int main(int argc, char *argv[]) {
         }
 
         for(int i = 0; i < ev_cnt; i ++){
-
             if(events[i].data.fd == sv_socket.socket_sever ){
                 sockaddr_in client_addr;
                 socklen_t client_len = sizeof(client_addr);
@@ -83,14 +82,8 @@ int main(int argc, char *argv[]) {
                     cerr << "Error accepting client connection" << endl;
                     continue;
                 }
-
-
             }
-
         }
-
-
-
     }
 
 
