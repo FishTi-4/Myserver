@@ -1,9 +1,9 @@
 #ifndef CTCPSEVER_H
 #define CTCPSEVER_H
 
-#include "MCCS.h"
+#include "Serve.h"
 
-class ctcpsever
+class ctcpserver
 {
 public:
 
@@ -12,8 +12,8 @@ public:
     unsigned short port;
     std::string mes;
 
-    ctcpsever(std::string inport);
-    ~ctcpsever();
+    ctcpserver(std::string inport);
+    ~ctcpserver();
 };
 
 #endif

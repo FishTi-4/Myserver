@@ -1,7 +1,7 @@
 
-#include "CTCPsever.h"
+#include "CTCPserver.h"
 
-ctcpsever:: ctcpsever(std::string inport) : port((htons(stoi(inport))))
+ctcpserver:: ctcpserver(std::string inport) : port((htons(stoi(inport))))
 {
     if ((socket_sever = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1)
     {
@@ -25,7 +25,7 @@ ctcpsever:: ctcpsever(std::string inport) : port((htons(stoi(inport))))
     }
 }
 
-ctcpsever::~ctcpsever()
+ctcpserver::~ctcpserver()
 {
     close(socket_sever);
 }
