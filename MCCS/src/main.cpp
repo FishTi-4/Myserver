@@ -1,43 +1,7 @@
 #include "MCCS.h"
+#include "CTCPserver.h"
 
 using namespace std;
-
-class ctcpsever
-{
-public:
-    int socket_sever;
-    int socket_client;
-    unsigned short port;
-    string mes;
-    ctcpsever(string inport) : port((htons(stoi(inport))))
-    {
-        if ((socket_sever = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1)
-        {
-            cerr << "Error creating socket" << endl;
-            exit(1);
-        }
-        sockaddr_in server_addr;
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = port;
-        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-        if (bind(socket_sever, (sockaddr *)&server_addr, sizeof(server_addr)) == -1)
-        {
-            cerr << "Error binding socket" << endl;
-            exit(1);
-        }
-        if (listen(socket_sever, 5) == -1)
-        {
-            cerr << "Error listening on socket" << endl;
-            exit(1);
-        }
-    }
-
-    ~ctcpsever()
-    {
-        close(socket_sever);
-    }
-};
 
 int main(int argc, char *argv[]) {
 
@@ -47,7 +11,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    ctcpsever sv_socket(argv[1]);
+    ctcpserver sv_socket(argv[1]);
     cout << "服务器已启动，等待连接..." << '\n' << endl;
 
     
@@ -88,6 +52,4 @@ int main(int argc, char *argv[]) {
 
 
     return 0;
-
-
 }
