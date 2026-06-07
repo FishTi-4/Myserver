@@ -2,10 +2,11 @@
 #define THREADPOOL_H
 #include "MCCS.h"
 
-template<void (*T)()>
 class ThreadPool {
-private: using task = T;
+
 public:
+
+    using task = std::function<void()>;
 
     ThreadPool(int num_threads) : stop(false) {
         for (int i = 0; i < num_threads; ++i) {
@@ -63,4 +64,3 @@ private:
 
 
 #endif
-

@@ -1,27 +1,38 @@
 #include "CLIENT.h"
 
-client::client(int fd):client_fd(fd){}
-client::~client(){close(client_fd);
-    delete[] outmessage;
-}
-client::client() = default;
 
-client::client(client&& other) noexcept : client_fd(other.client_fd), outmessage(other.outmessage), buffer(std::move(other.buffer)) {
-    other.client_fd = -1;
-    other.outmessage = nullptr;
+client::client(int fd):client_fd(fd){}
+
+client::~client(){close(client_fd);
+    outmessage.clear();
 }
-client& client::operator=(client&& other) noexcept {
+
+client::client():client_fd(-1){};
+
+client::client(client&& other) : client_fd(other.client_fd), outmessage(std::move(other.outmessage)),
+    buffer_get_size(other.buffer_get_size), need_write(other.need_write) {
+    buffer = std::move(other.buffer);
+    other.buffer_get_size = 0;
+    other.need_write = false;
+    other.client_fd = -1;
+    other.outmessage.clear();
+}
+
+client& client::operator=(client&& other) {
 
     if (this != &other) {
         
         client_fd = other.client_fd;
-        outmessage = other.outmessage;
+        outmessage = std::move(other.outmessage);
         buffer = std::move(other.buffer);
+        buffer_get_size = other.buffer_get_size;
+        need_write = other.need_write;
 
         other.client_fd = -1;
-        other.outmessage = nullptr;
+        other.buffer_get_size = 0;
+        other.need_write = false;
+        other.outmessage.clear();
 
     }
     return *this;
 }
-    

@@ -28,8 +28,8 @@
 #include <atomic>
 #include <queue>
 #include <functional>
-#include <mutex>
+#include <vector>
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 32
 
 #endif

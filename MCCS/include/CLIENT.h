@@ -15,7 +15,13 @@ public:
     client(client&&);
     client& operator=(client&&);
 
-    char* outmessage;
+    // int out_size;
+    // char* outmessage;
+    std::string outmessage;
+
+    bool need_write = false;
+    int buffer_get_size = 0;
+    
     std::unique_ptr<char[]> buffer = std::make_unique<char[]>(BUFFER_SIZE);
     // char buffer[BUFFER_SIZE];
     int client_fd;
