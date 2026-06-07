@@ -26,6 +26,9 @@
 #include <algorithm>
 #include <chrono>
 #include <atomic>
+#include <queue>
+#include <functional>
+#include <mutex>
 
 #define BUFFER_SIZE 4096
 

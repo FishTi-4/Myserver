@@ -1,6 +1,7 @@
 #include "MCCS.h"
 #include "CTCPserver.h"
 #include "CLIENT.h"
+#include "ThreadPool.h"
 
 using namespace std;
 
@@ -9,9 +10,9 @@ const int EPOLL_MAX = (1 << 20);
 static int user_count = 0;
 
 void setnonblocking(int);
+void calc();    //模拟计算密集型任务
 
 int main(int argc, char *argv[]) {
-
     if(argc != 2)
     {
         cerr << "Usage: " << argv[0] << " <port>" << endl;
@@ -37,6 +38,8 @@ int main(int argc, char *argv[]) {
         cerr << "Error adding server socket to epoll" << endl;
         return 1;
     }
+
+    ThreadPool<calc> pool(4);
 
     while(1){
         int ev_cnt = epoll_wait(epfd, events, EPOLL_MAX, -1);
@@ -82,4 +85,27 @@ void setnonblocking(int fd) {
         cerr << "Error setting file descriptor to non-blocking" << endl;
         exit(1);
     }
+}
+
+class worker_thread {
+public:
+
+    using task = function<void()>;
+
+    mutex mtx;
+    condition_variable cv;
+    bool has_task = false;
+    atomic<bool> stop_thread = false;
+    queue<function<void()>> tasks_q;
+
+
+
+};
+
+void calc(){
+    long long sum = 0;
+    for(int i = 1; i <= 500000000; i ++){
+        sum += i;
+    }
+    cout << "计算结束，结果为: " << sum << endl;
 }

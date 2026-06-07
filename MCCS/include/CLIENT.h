@@ -1,3 +1,6 @@
+#ifndef CLIENT_H
+#define CLIENT_H
+
 #include "MCCS.h"
 
 class client{
@@ -17,3 +20,5 @@ public:
     // char buffer[BUFFER_SIZE];
     int client_fd;
 };
+
+#endif
