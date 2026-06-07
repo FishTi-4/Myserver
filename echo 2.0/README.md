@@ -84,7 +84,6 @@ g++ -std=c++11 -Iinclude/*.cpp -o client
 
 ## 实现细节
 
-### 服务器（`ctcpsever` / `ctcpserver`）
 - 使用 `AF_INET`、`SOCK_STREAM | SOCK_NONBLOCK` 在指定端口上创建套接字并进行绑定。
 - 监听队列长度为 5。
 - 使用 `epoll_create1(0)` 创建 epoll 实例，并将监听套接字以 `EPOLLIN | EPOLLET` 事件添加。
