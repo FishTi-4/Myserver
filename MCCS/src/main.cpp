@@ -1,7 +1,14 @@
 #include "MCCS.h"
 #include "CTCPserver.h"
+#include "CLIENT.h"
 
 using namespace std;
+
+const int EPOLL_MAX = (1 << 20);
+
+static int user_count = 0;
+
+void setnonblocking(int);
 
 int main(int argc, char *argv[]) {
 
@@ -11,17 +18,19 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    unique_ptr<client[]> client_list = make_unique<client[]>(EPOLL_MAX);
+    // client *client_list = new client[EPOLL_MAX];
+
     ctcpserver sv_socket(argv[1]);
     cout << "服务器已启动，等待连接..." << '\n' << endl;
 
-    
     int epfd = epoll_create1(0);
     if (epfd == -1) {
         cerr << "Error creating epoll instance" << endl;
         return 1;
     }
 
-    epoll_event ev, events[100];
+    epoll_event ev, events[EPOLL_MAX];
     ev.events = EPOLLIN | EPOLLET;
     ev.data.fd = sv_socket.socket_sever;
     if (epoll_ctl(epfd, EPOLL_CTL_ADD, sv_socket.socket_sever, &ev) == -1) {
@@ -30,8 +39,7 @@ int main(int argc, char *argv[]) {
     }
 
     while(1){
-
-        int ev_cnt = epoll_wait(epfd, events, 100, -1);
+        int ev_cnt = epoll_wait(epfd, events, EPOLL_MAX, -1);
         if (ev_cnt == -1) {
             cerr << "Error waiting for epoll events" << endl;
             return 1;
@@ -46,10 +54,32 @@ int main(int argc, char *argv[]) {
                     cerr << "Error accepting client connection" << endl;
                     continue;
                 }
+
+                if(client_len >= EPOLL_MAX){  // 后期提示用户过多 返回给客户端
+                    cerr << "Too many clients connected" << endl;
+                    close(client_fd);
+                    continue;
+                }
+
+                client_list[user_count++] = client(client_fd);
+                ev.events = EPOLLIN | EPOLLET;
             }
+
+
         }
     }
 
-
     return 0;
+}
+
+void setnonblocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) {
+        cerr << "Error getting file descriptor flags" << endl;
+        exit(1);
+    }
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+        cerr << "Error setting file descriptor to non-blocking" << endl;
+        exit(1);
+    }
 }
