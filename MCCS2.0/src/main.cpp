@@ -13,6 +13,7 @@ void calc(); // 模拟计算密集型任务
 
 int main(int argc, char *argv[])
 {
+
     if (argc != 2)
     {
         cerr << "Usage: " << argv[0] << " <port>" << endl;
@@ -23,7 +24,7 @@ int main(int argc, char *argv[])
 
     ctcpserver sv_socket(argv[1]);
     // cout << "服务器已启动，等待连接..." << '\n'
-        //  << endl;
+    //      << endl;
 
     int epfd = epoll_create1(0);
     if (epfd == -1)
@@ -44,8 +45,9 @@ int main(int argc, char *argv[])
 
     ThreadPool pool(128);
 
-    while (1)
+    while (1)   //EPOLL
     {
+
         int ev_cnt = epoll_wait(epfd,  events.get() , EPOLL_MAX, -1);
         if (ev_cnt == -1)
         {
@@ -66,8 +68,10 @@ int main(int argc, char *argv[])
                     {
                         if (errno == EAGAIN || errno == EWOULDBLOCK)
                             break;
-                        cerr << "Error accepting client connection" << endl;
-                        break;
+                        
+                        // cerr << "Error accepting client connection" << endl;
+                        
+                        continue;
                     }
 
                     if (client_fd >= EPOLL_MAX)
@@ -79,54 +83,79 @@ int main(int argc, char *argv[])
 
                     client_list[client_fd] = client(client_fd);
                     user_count++;
-                    ev.events = EPOLLIN | EPOLLET;
+                    ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
                     ev.data.fd = client_fd;
+
                     if (epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
                         cerr << "Error adding client socket to epoll" << endl;
                         close(client_fd);
                         user_count--;
                         continue;
                     }
-                    // cout << "新客户端连接，fd: " << client_fd << ", 当前在线人数: " << user_count << endl;
-                }
-            }
-            else if (events[i].events & EPOLLOUT)
-            {
 
+                    // cout << "新客户端连接，fd: " << client_fd << ", 当前在线人数: " << user_count << endl;
+
+                }
+                continue;
+            }
+            
+            if (events[i].events & EPOLLOUT)   //再次输出 EPOLLOUT
+            {
                 int fd = events[i].data.fd;
                 client &cur_client = client_list[fd];
 
-                while(1){
-                    int bytes_sent = send(fd, cur_client.outmessage.c_str(), cur_client.outmessage.size(), 0);
-                    if (bytes_sent == -1)
-                    {   
-                        if (errno == EAGAIN || errno == EWOULDBLOCK)
+                if (cur_client.need_write)
+                {
+                    int sign_over = 0;
+
+                    while(1){
+                        int bytes_sent = send(fd, cur_client.outmessage.c_str(), cur_client.outmessage.size(), MSG_NOSIGNAL);
+                        if (bytes_sent == -1)
                         {
-                            break;
+                            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                cerr << "Error sending to client fd: " << fd << endl;
+                                epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
+                                close(fd);
+                                user_count--;
+                                break;
+                            }
                         }
-                        else
+                        else if (bytes_sent > 0)
                         {
-                            cerr << "Error sending to client fd: " << fd << endl;
+                            cur_client.outmessage.erase(0, bytes_sent);
+                            cur_client.buffer_get_size -= bytes_sent;
+
+                            if (cur_client.outmessage.empty())
+                            {
+                                sign_over = 1;
+                                // ev.events = EPOLLIN | EPOLLET;
+                                // epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
+                                break;
+                            }
+                        }
+                        else {
+
                             epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
                             close(fd);
                             user_count--;
                             break;
                         }
                     }
-                    else
-                    {
-                        cur_client.outmessage.erase(0, bytes_sent);
-                        if (cur_client.outmessage.empty())
-                        {
-                            ev.events = EPOLLIN | EPOLLET;
-                            epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
-                            break;
-                        }
+                    //over
+
+                    if (sign_over) {
+                        cur_client.buffer_get_size = 0;
+                        cur_client.need_write = 0;
                     }
                 }
-
             }
-            else
+
+            if (events[i].events & EPOLLIN )// EPOLLIN
             {
                 int fd = events[i].data.fd;
                 client &cur_client = client_list[fd];
@@ -135,16 +164,18 @@ int main(int argc, char *argv[])
                 {
                     if (cur_client.buffer_get_size == BUFFER_SIZE)
                         break;
+
                     int bytes_read = recv(fd, cur_client.buffer.get() + cur_client.buffer_get_size, BUFFER_SIZE - cur_client.buffer_get_size, 0);
-                    
+
                     if (bytes_read > 0)
                     {
                         cur_client.buffer_get_size += bytes_read;
                     }
-                    else if (bytes_read == 0)
+                    else if (bytes_read == 0) //关闭
                     {
-                        if (cur_client.buffer_get_size > 0)
+                        if (cur_client.buffer_get_size > 0) //残留信息
                             break;
+
                         // cout << "客户端断开连接，fd: " << fd << endl;
                         epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
                         close(fd);
@@ -157,9 +188,8 @@ int main(int argc, char *argv[])
                         {
                             break;
                         }
-                        else
+                        else    // -1
                         {
-
                             cerr << "Error reading from client fd: " << fd << endl;
                             epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
                             close(fd);
@@ -168,6 +198,7 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
+                //IN逻辑
                 if (cur_client.buffer_get_size > 0)
                 {
                     if (cur_client.buffer[0] == '/')
@@ -175,18 +206,72 @@ int main(int argc, char *argv[])
                         // 模拟计算密集型任务
                         pool.post(calc);
                         cur_client.buffer_get_size = 0;
-                        ev.events = EPOLLIN | EPOLLET;
-                        epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
+                        // ev.events = EPOLLIN | EPOLLET;
+                        // epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
                     }
                     else
                     {
                         // 暂时以回声验证通讯
                         // cout << "收到客户端消息，fd: " << fd << ", 消息内容: " << string(cur_client.buffer.get(), cur_client.buffer_get_size) << endl;
-                        cur_client.outmessage = "服务器已收到消息: " + string(cur_client.buffer.get(), cur_client.buffer_get_size);
+
+                        cur_client.outmessage = string(cur_client.buffer.get(), cur_client.buffer_get_size);
                         cur_client.buffer_get_size = 0;
 
-                        ev.events = EPOLLOUT | EPOLLET;
-                        epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
+                        int sign_over = 0;
+                        while(1){
+                            int bytes_sent = send(fd, cur_client.outmessage.c_str(), cur_client.outmessage.size(), MSG_NOSIGNAL);
+                            if (bytes_sent == -1)
+                            {
+                                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                                {
+                                    cur_client.need_write = 1;
+                                    break;
+                                }
+                                else
+                                {
+                                    cerr << "Error sending to client fd: " << fd << endl;
+                                    epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
+                                    close(fd);
+                                    user_count--;
+                                    break;
+                                }
+                            }
+                            else if (bytes_sent > 0)
+                            {
+                                cur_client.outmessage.erase(0, bytes_sent);
+                                cur_client.buffer_get_size -= bytes_sent;
+
+                                if (cur_client.outmessage.empty())
+                                {
+                                    sign_over = 1;
+                                    // ev.events = EPOLLIN | EPOLLET;
+                                    // epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
+                                    break;
+                                }
+                            }
+                            else {
+
+                                epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
+                                close(fd);
+                                user_count--;
+                                break;
+                            }
+                        }
+                        //over
+
+                        if (sign_over) {
+                            cur_client.buffer_get_size = 0;
+                            cur_client.need_write = 0;
+                        }
+                        else {
+                            cur_client.need_write = 1;
+                        }
+
+
+                        // cur_client.need_write = 1;
+
+                        // ev.events = EPOLLOUT | EPOLLET;
+                        // epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
                     }
                 }
             }

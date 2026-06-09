@@ -9,8 +9,8 @@ client::~client(){close(client_fd);
 
 client::client():client_fd(-1){};
 
-client::client(client&& other) : client_fd(other.client_fd), outmessage(std::move(other.outmessage)),
-    buffer_get_size(other.buffer_get_size), need_write(other.need_write) {
+client::client(client&& other) : outmessage(std::move(other.outmessage)),
+    need_write(other.need_write), buffer_get_size(other.buffer_get_size), client_fd(other.client_fd) {
     buffer = std::move(other.buffer);
     other.buffer_get_size = 0;
     other.need_write = false;
