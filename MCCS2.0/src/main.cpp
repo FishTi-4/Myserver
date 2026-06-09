@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 
                     client_list[client_fd] = client(client_fd);
                     user_count++;
-                    ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+                    ev.events = EPOLLIN | EPOLLET;
                     ev.data.fd = client_fd;
 
                     if (epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
@@ -151,6 +151,8 @@ int main(int argc, char *argv[])
                     if (sign_over) {
                         cur_client.buffer_get_size = 0;
                         cur_client.need_write = 0;
+                        ev.events = EPOLLIN | EPOLLET;
+                        epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
                     }
                 }
             }
@@ -265,6 +267,8 @@ int main(int argc, char *argv[])
                         }
                         else {
                             cur_client.need_write = 1;
+                            ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+                            epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
                         }
 
 
