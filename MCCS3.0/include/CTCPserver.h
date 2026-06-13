@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef CTCPSEVER_H
 #define CTCPSEVER_H
 
@@ -8,7 +10,6 @@ class ctcpserver
 public:
 
     int socket_sever;
-    int socket_client;
     unsigned short port;
 
     ctcpserver(std::string inport);

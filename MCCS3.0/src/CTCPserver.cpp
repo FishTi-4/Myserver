@@ -1,3 +1,4 @@
+#pragma once
 
 #include "CTCPserver.h"
 
@@ -18,6 +19,7 @@ ctcpserver:: ctcpserver(std::string inport) : port((htons(stoi(inport))))
         std::cerr << "Error binding socket" << std::endl;
         exit(1);
     }
+
     if (listen(socket_sever, 65535) == -1)
     {
         std::cerr << "Error listening on socket" << std::endl;

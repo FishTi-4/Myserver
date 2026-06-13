@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef MCCS_H
 #define MCCS_H
 
