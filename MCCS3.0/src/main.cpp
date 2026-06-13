@@ -129,11 +129,23 @@ void run_server(string port){
                 }
                 else{       //成功
 
-                    cli->writebuffer.size = cqes[i]->res;
-                    //--------
-                    // cout << "User " << cli->fd << " read " << cli->writebuffer.size << " bytes" << endl;
-                    memcpy(cli->writebuffer.buf, cli->readbuffer, cli->writebuffer.size);
-                       
+                    //----------------------
+                    // 简单HTTP检测：以 "GET " 或 "POST" 开头
+                    if (cqes[i]->res >= 4 && (
+                        strncmp(cli->readbuffer, "GET ", 4) == 0 ||
+                        strncmp(cli->readbuffer, "POST", 4) == 0 ||
+                        strncmp(cli->readbuffer, "HEAD", 4) == 0
+                    )) {
+                        const char* http_resp = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: keep-alive\r\n\r\nhello";
+                        cli->writebuffer.size = strlen(http_resp);
+                        memcpy(cli->writebuffer.buf, http_resp, cli->writebuffer.size);
+                    } else {
+                        // 非HTTP则回显（原有行为）
+                        cli->writebuffer.size = cqes[i]->res;
+                        memcpy(cli->writebuffer.buf, cli->readbuffer, cli->writebuffer.size);
+                    }
+
+                    //----------------------
                     write_event(&ring, clis[cli->fd]);
                 }
             }
