@@ -1,5 +1,3 @@
-#pragma once
-
 #include "connection.h"
 
 connection::connection(int fd)

@@ -31,6 +31,7 @@ public:
     char readbuffer[BUFFER_SIZE];
     
 
+    connection() = default;
     connection(int fd);
     ~connection();
 
