@@ -31,11 +31,11 @@ public:
     char readbuffer[BUFFER_SIZE];
     
 
-    connection();
+    connection() noexcept;
     connection(int fd);
     ~connection();
 
-    connection& operator=(connection&& other);
+    connection& operator=(connection&& other) noexcept;
 
     EVENT_TYPE event;
     WR_BUFFER writebuffer;

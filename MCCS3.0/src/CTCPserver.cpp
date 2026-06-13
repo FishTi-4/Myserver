@@ -1,5 +1,3 @@
-#pragma once
-
 #include "CTCPserver.h"
 
 ctcpserver:: ctcpserver(std::string inport) : port((htons(std::stoi(inport))))

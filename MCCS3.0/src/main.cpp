@@ -11,6 +11,8 @@ constexpr int MAX_user = 1024;
 
 atomic<int> cur_user = 0;
 
+socklen_t rm;
+
 void close_socket(int fd) {
     if(fd < 0)  return;
     close(fd);
@@ -62,12 +64,11 @@ bool accept_event(io_uring* ring, connection& listen_cli){
     }
 
     listen_cli.event = ACCEPT_EVENT;
-    socklen_t len = sizeof(listen_cli.addr);
-    io_uring_prep_accept(sqe, listen_cli.fd, (sockaddr*)&listen_cli.addr, &len, 0);
+    rm = sizeof(listen_cli.addr);
+    io_uring_prep_accept(sqe, listen_cli.fd, (sockaddr*)&listen_cli.addr, &rm , 0);
     io_uring_sqe_set_data(sqe, &listen_cli);
     return true;
 }
-
 
 void run_server(string port){ 
     ctcpserver server(port);
@@ -95,42 +96,42 @@ void run_server(string port){
             if(cli->event == ACCEPT_EVENT){
                 if(cqes[i]->res < 0){
                     cerr << "Accept failed" << endl;
-                    continue;
+                    
                 }
                 else if(++ cur_user >= MAX_user || cqes[i]->res >= MAX_user){
                     cerr << "Too many user" << endl;
                     -- cur_user;
-                    continue;
+                    
                 }
                 else{ //成功
 
                     int client_fd = cqes[i]->res;
                     
-                    clis[client_fd] = connection(client_fd);
-                    
+                    clis[client_fd] = connection(client_fd);    
                     read_event(&ring, clis[client_fd]);
                     //----
-                    cout << "New user " << client_fd << " from " << cli->addr.sin_addr.s_addr << ":" << cli->addr.sin_port << endl;
-                    accept_event(&ring, listen_cli);
+                    // cout << "New user " << client_fd << " from " << cli->addr.sin_addr.s_addr << ":" << cli->addr.sin_port << endl;
                 }
+                accept_event(&ring, listen_cli);
             }
             else if(cli->event == READ_EVENT){
                 if(cqes[i]->res < 0){
+                    close_socket(cli->fd);
+                    -- cur_user;
                     cerr << "Read failed" << endl;
-                    continue;
                 }
                 else if(cqes[i]->res == 0){
                     //--------
-                    cout << "User " << cli->fd << " disconnected" << endl;
+                    // cout << "User " << cli->fd << " disconnected" << endl;
                     close_socket(cli->fd);
                     -- cur_user;
-                    continue;
+                    
                 }
                 else{       //成功
 
                     cli->writebuffer.size = cqes[i]->res;
                     //--------
-                    cout << "User " << cli->fd << " read " << cli->writebuffer.size << " bytes" << endl;
+                    // cout << "User " << cli->fd << " read " << cli->writebuffer.size << " bytes" << endl;
                     memcpy(cli->writebuffer.buf, cli->readbuffer, cli->writebuffer.size);
                        
                     write_event(&ring, clis[cli->fd]);
@@ -167,6 +168,7 @@ int main(int argc, char *argv[])
     //     exit(1);
     // }
 
+    cout << "Server started" << endl;
     run_server("8080");
     
 
