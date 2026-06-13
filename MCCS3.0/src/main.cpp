@@ -6,8 +6,8 @@
 
 using namespace std;
 
-constexpr int QUEUE_DEPTH = (1 << 10);
-constexpr int MAX_user = 1024;
+constexpr int QUEUE_DEPTH = (1 << 20);
+constexpr int MAX_user = (1 << 20);
 
 atomic<int> cur_user = 0;
 
