@@ -97,53 +97,62 @@ void run_server(string port){
                     cerr << "Accept failed" << endl;
                     continue;
                 }
-                if(++ cur_user >= MAX_user){
+                else if(++ cur_user >= MAX_user || cqes[i]->res >= MAX_user){
                     cerr << "Too many user" << endl;
                     -- cur_user;
                     continue;
                 }
-                
-                int client_fd = cqes[i]->res;
-                
-                clis[client_fd] = std::move(connection(client_fd));
+                else{ //成功
 
-                read_event(&ring, clis[client_fd]);
-                //----
-                cout << "New user " << client_fd << " from " << cli->addr.sin_addr.s_addr << ":" << cli->addr.sin_port << endl;
-                accept_event(&ring, listen_cli);
+                    int client_fd = cqes[i]->res;
+                    
+                    clis[client_fd] = connection(client_fd);
+                    
+                    read_event(&ring, clis[client_fd]);
+                    //----
+                    cout << "New user " << client_fd << " from " << cli->addr.sin_addr.s_addr << ":" << cli->addr.sin_port << endl;
+                    accept_event(&ring, listen_cli);
+                }
             }
             else if(cli->event == READ_EVENT){
                 if(cqes[i]->res < 0){
                     cerr << "Read failed" << endl;
                     continue;
                 }
-                if(cqes[i]->res == 0){
+                else if(cqes[i]->res == 0){
                     //--------
                     cout << "User " << cli->fd << " disconnected" << endl;
                     close_socket(cli->fd);
                     -- cur_user;
                     continue;
                 }
-                cli->writebuffer.size = cqes[i]->res;
-                //--------
-                cout << "User " << cli->fd << " read " << cli->writebuffer.size << " bytes" << endl;
-                memcpy(cli->writebuffer.buf, cli->readbuffer, cli->writebuffer.size);
-                
+                else{       //成功
 
-                write_event(&ring, clis[cli->fd]);
+                    cli->writebuffer.size = cqes[i]->res;
+                    //--------
+                    cout << "User " << cli->fd << " read " << cli->writebuffer.size << " bytes" << endl;
+                    memcpy(cli->writebuffer.buf, cli->readbuffer, cli->writebuffer.size);
+                       
+                    write_event(&ring, clis[cli->fd]);
+                }
             }
             else if(cli->event == WRITE_EVENT){
                 if(cqes[i]->res < 0){
                     cerr << "Write failed" << endl;
                     close_socket(cli->fd);
                     -- cur_user;
-                    continue;
                 }
-                read_event(&ring, clis[cli->fd]);
+                else{ //成功
+
+                    read_event(&ring, clis[cli->fd]);
+                }
             }
             else{
                 cerr << "Unknown event" << endl;
             }
+
+
+            
             io_uring_cqe_seen(&ring, cqes[i]);
         }
     }

@@ -31,12 +31,12 @@ public:
     char readbuffer[BUFFER_SIZE];
     
 
-    connection() = default;
+    connection();
     connection(int fd);
     ~connection();
 
-    void operator=(const connection& other);
-    
+    connection& operator=(connection&& other);
+
     EVENT_TYPE event;
     WR_BUFFER writebuffer;
 
