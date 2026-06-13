@@ -119,6 +119,7 @@ void run_server(string port){
             else if(cli->event == READ_EVENT){
                 if(cqes[i]->res < 0){
                     close_socket(cli->fd);
+                    clis[cli->fd].fd = -1;
                     -- cur_user;
                     cerr << "Read failed" << endl;
                 }
@@ -126,6 +127,7 @@ void run_server(string port){
                     //--------
                     // cout << "User " << cli->fd << " disconnected" << endl;
                     close_socket(cli->fd);
+                    clis[cli->fd].fd = -1;
                     -- cur_user;
                     
                 }
@@ -155,6 +157,7 @@ void run_server(string port){
                 if(cqes[i]->res < 0){
                     cerr << "Write failed" << endl;
                     close_socket(cli->fd);
+                    clis[cli->fd].fd = -1;
                     -- cur_user;
                 }
                 else{ //成功

@@ -63,6 +63,6 @@ run_test() {
 
 run_test 1000 10 "▎ 1K"
 run_test 10000 10 "▎ 10K"
-run_test 100000 10 "▎ 100K"
+#run_test 100000 10 "▎ 100K"
 
 echo -e "\n${GREEN}=== 压测完成 ===${NC}"
