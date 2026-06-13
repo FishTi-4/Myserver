@@ -35,6 +35,8 @@ public:
     connection(int fd);
     ~connection();
 
+    void operator=(const connection& other);
+    
     EVENT_TYPE event;
     WR_BUFFER writebuffer;
 

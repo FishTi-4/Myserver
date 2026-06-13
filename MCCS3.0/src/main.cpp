@@ -11,6 +11,11 @@ constexpr int MAX_user = 1024;
 
 atomic<int> cur_user = 0;
 
+void close_socket(int fd) {
+    if(fd < 0)  return;
+    close(fd);
+}
+
 io_uring uring_create() {
     io_uring ring = {};
     if (io_uring_queue_init(QUEUE_DEPTH, &ring, 0) < 0) {
@@ -63,12 +68,6 @@ bool accept_event(io_uring* ring, connection& listen_cli){
     return true;
 }
 
-// void handle_event(io_uring* ring, ){ 
-    
-
-
-// }
-
 
 void run_server(string port){ 
     ctcpserver server(port);
@@ -92,6 +91,7 @@ void run_server(string port){
         for(int i = 0; i < num; i ++){
 
             connection* cli = (struct connection *)cqes[i]->user_data;
+            
             if(cli->event == ACCEPT_EVENT){
                 if(cqes[i]->res < 0){
                     cerr << "Accept failed" << endl;
@@ -104,29 +104,49 @@ void run_server(string port){
                 }
                 
                 int client_fd = cqes[i]->res;
-                clis[cur_user] = std::move(connection(client_fd));
+                
+                clis[client_fd] = std::move(connection(client_fd));
 
-                read_event(&ring, clis[cur_user]);
+                read_event(&ring, clis[client_fd]);
                 //----
-                cout << "New user " << cur_user << " from " << cli->addr.sin_addr.s_addr << ":" << cli->addr.sin_port << endl;
+                cout << "New user " << client_fd << " from " << cli->addr.sin_addr.s_addr << ":" << cli->addr.sin_port << endl;
                 accept_event(&ring, listen_cli);
             }
             else if(cli->event == READ_EVENT){
+                if(cqes[i]->res < 0){
+                    cerr << "Read failed" << endl;
+                    continue;
+                }
+                if(cqes[i]->res == 0){
+                    //--------
+                    cout << "User " << cli->fd << " disconnected" << endl;
+                    close_socket(cli->fd);
+                    -- cur_user;
+                    continue;
+                }
+                cli->writebuffer.size = cqes[i]->res;
+                //--------
+                cout << "User " << cli->fd << " read " << cli->writebuffer.size << " bytes" << endl;
+                memcpy(cli->writebuffer.buf, cli->readbuffer, cli->writebuffer.size);
                 
+
+                write_event(&ring, clis[cli->fd]);
             }
             else if(cli->event == WRITE_EVENT){
-
+                if(cqes[i]->res < 0){
+                    cerr << "Write failed" << endl;
+                    close_socket(cli->fd);
+                    -- cur_user;
+                    continue;
+                }
+                read_event(&ring, clis[cli->fd]);
             }
             else{
                 cerr << "Unknown event" << endl;
             }
-
             io_uring_cqe_seen(&ring, cqes[i]);
         }
-
     }
-
-
 }
 
 int main(int argc, char *argv[])
