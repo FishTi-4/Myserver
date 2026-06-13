@@ -16,9 +16,9 @@ connection::connection() noexcept {
 
 connection& connection::operator=(connection&& other) noexcept {
     if (this == &other) return *this;
-    // if (fd != -1) {
-    //     close(fd);
-    // }
+    if (fd != -1) {
+        close(fd);
+    }
 
     fd = other.fd;
     memset(readbuffer, 0, BUFFER_SIZE);

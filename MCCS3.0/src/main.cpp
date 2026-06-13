@@ -101,13 +101,14 @@ void run_server(string port){
                 }
                 else if(++ cur_user >= MAX_user || cqes[i]->res >= MAX_user){
                     cerr << "Too many user" << endl;
+                    close_socket(cqes[i]->res);
                     -- cur_user;
-                    
                 }
                 else{ //成功
 
                     int client_fd = cqes[i]->res;
-                    
+                    int opt = 1;
+                    setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
                     clis[client_fd] = connection(client_fd);    
                     read_event(&ring, clis[client_fd]);
                     //----
