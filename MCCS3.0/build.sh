@@ -1,2 +1,2 @@
 #!/bin/bash
-g++ -std=gnu++17 -Iinclude src/*.cpp -o MCCS -luring
+g++ -std=gnu++23 -Iinclude src/*.cpp -o MCCS -luring

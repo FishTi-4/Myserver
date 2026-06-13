@@ -7,6 +7,10 @@ ctcpserver:: ctcpserver(std::string inport) : port((htons(std::stoi(inport))))
         std::cerr << "Error creating socket" << std::endl;
         exit(1);
     }
+
+    int opt = 1;
+    setsockopt(socket_sever, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
     sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = port;

@@ -9,7 +9,7 @@
 
 #include "MCCS.h"
 
-#define BUFFER_SIZE 64
+#define BUFFER_SIZE 128
 
 enum EVENT_TYPE {
     ACCEPT_EVENT = 1,
